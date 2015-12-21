@@ -1,15 +1,18 @@
 import json
 import requests
 
+
 class HTTPException(Exception):
     """Raise when a general HTTP error happened.
     """
     pass
-    
+
+
 class ServerNotFoundException(HTTPException):
     """Raise when server is not found
     """
     pass
+
 
 class OctoprintException(Exception):
     """Base exception for OctoPrint errors.
@@ -17,10 +20,12 @@ class OctoprintException(Exception):
     """
     pass
 
+
 class NotAuthorizedException(OctoprintException):
     """Raise when API key not ok.
     """
     pass
+
 
 class PrinterBusyException(OctoprintException):
     """Raise when Operation requires idle printer
@@ -34,21 +39,22 @@ class FileException(OctoprintException):
     """
     pass
 
+
 class LocationException(FileException):
     """Raise when a wrong storage location is selected.
     """
     pass
+
 
 class UnsupportedFileException(FileException):
     """Raise when trying to upload a file that is neither gcode nor stl.
     """
     pass
 
-class api(object):
+
+class Api(object):
     """
     Management and wrapper class for OctoPrint
-    Note: All measuremets are in mm and all temperatures in
-    degrees celsius!
     """
 
     def _set_url(self, base_url=None):
@@ -57,39 +63,43 @@ class api(object):
         base_url has to include the port information if not
         default http port (:80)
         """
-        self._url = {'base':base_url, 'version':base_url+'/api/version',
-            'files':base_url+'/api/files', 'files-sd':base_url+'/api/files/sd',
-            'files-local':base_url+'/api/files/local',
-            'connection':base_url+'/api/connection',
-            'printer':base_url+'/api/printer',
-            'printhead':base_url+'/api/printer/printhead',
-            'tool':base_url+'/api/printer/tool',
-            'bed':base_url+'/api/printer/bed',
-            'sd':base_url+'/api/printer/sd',
-            'command':base_url+'/api/printer/command'}
+        self._url = {'base': base_url,
+                     'version': base_url + '/api/version',
+                     'files': base_url + '/api/files',
+                     'files-sd': base_url + '/api/files/sd',
+                     'files-local': base_url + '/api/files/local',
+                     'connection': base_url + '/api/connection',
+                     'printer': base_url + '/api/printer',
+                     'printhead': base_url + '/api/printer/printhead',
+                     'tool': base_url + '/api/printer/tool',
+                     'bed': base_url + '/api/printer/bed',
+                     'sd': base_url + '/api/printer/sd',
+                     'command': base_url + '/api/printer/command',
+                     'job': base_url + '/api/job'}
 
     def __init__(self, base_url=None, api_key='', debug=False):
         """
         Initialize the api object.
+        :rtype : API object for Octoprint control
         base_url -- URL of the OctoPrint server, including port. Default: None
         api_key -- API key for accessing OctoPrint. Default: empty string
         debug -- Switch URL output on or off, default: False (no debug)
         """
         self._set_url(base_url=base_url)
-        self._header = {'X-Api-Key':api_key, 'content-type':'application/json'}
+        self._header = {'X-Api-Key': api_key, 'content-type': 'application/json'}
         self._debug = debug
 
     @property
     def apikey(self):
-        return(self._header['X-Api-Key'])
+        return self._header['X-Api-Key']
 
     @apikey.setter
     def apikey(self, api_key):
         self._header['X-Api-Key'] = api_key
-        
+
     @property
     def url(self):
-        return(self._url['base'])
+        return self._url['base']
 
     @url.setter
     def url(self, url_string):
@@ -99,7 +109,7 @@ class api(object):
         response = requests.get(url, headers=self._header, params=param)
         if response.status_code == 401:
             raise NotAuthorizedException(response)
-        elif response.status_code >=400:
+        elif response.status_code >= 400:
             raise HTTPException(response)
         else:
             data = response.json()
@@ -107,7 +117,7 @@ class api(object):
 
     def _post_request(self, url=None, request=None):
         response = requests.post(url, headers=self._header,
-            data=json.dumps(request))
+                                 data=json.dumps(request))
         # Is printer busy?
         if response.status_code == 409:
             raise PrinterBusyException(response)
@@ -119,48 +129,44 @@ class api(object):
             raise HTTPException(response)
         # Is response empty?
         else:
-            return(response)
-    
+            return response
+
     def get_status(self, history=True, limit=2):
         """
         Get the status of the OctoPrint server.
-        Parameters history and limit are for requesting temperature
-        history data and limiting it to a given number of entries.
-        Returns a dictionary with the current printer state.
-
-        Otherwise raises an exception, either HTTPException
-        or OctoprintException.
+        Returns a dictionary:
+        {<json_decoded_data>}
+        Otherwise raises an exception
         """
         if history:
             hist_str = 'true'
         else:
             hist_str = 'false'
-        param={'history':hist_str, 'limit':limit}
-        r = self._get_request(self._url['printer'], param)
-        return(r)
+        param = {'history': hist_str, 'limit': limit}
+        return_val = self._get_request(self._url['printer'], param)
+        return return_val
 
     def get_version(self):
         """
         Get version information of the OctoPrint server
-        Otherwise raises an exception, either HTTPException
-        or OctoprintException.
+        Otherwise raises an exception
         """
-        r = self._get_request(self._url['version'], None)
-        return(r)
+        return_val = self._get_request(self._url['version'], None)
+        return return_val
 
     def get_connection(self):
         """
-        Get connetion information between OctoPrint server
+        Get connection information between OctoPrint server
         and printer.
-        Otherwise raises an exception, either HTTPException
-        or OctoprintException.
+        Otherwise raises an exception.
         """
-        r = self._get_request(self._url['connection'], None)
-        return(r)
+        return_val = self._get_request(self._url['connection'], None)
+        return return_val
 
     def home(self, x=None, y=None, z=None):
-        """Homes the selected axes. Jus set the axis parameter
-        you want to home.
+        """
+        Home the printhead in the given axis.
+        Any value different than 'None' will home the respective axis.
         """
         home_set = []
         if x:
@@ -169,71 +175,183 @@ class api(object):
             home_set.append('y')
         if z:
             home_set.append('z')
-        request = {'command':'home','axes':home_set}
-        r = self._post_request(self._url['printhead'], request)
-        return(r)
+        request = {'command': 'home', 'axes': home_set}
+        return_val = self._post_request(self._url['printhead'], request)
+        return return_val
 
     def jog(self, x=None, y=None, z=None):
-        """Moves the print head a given amount in each given
-        direction relative to the current position.
-        May rise an exception, either HTTPException
-        or OctoprintException (for example, when trying to jog
-        when the printer is busy or disconnected).
         """
-        request = {'command':'jog'}
+        Moves the printhead the given values.
+        Any value other than 'None' will move in the respective axis,
+        all values are incremental.
+        (e.g. x=10 followed by x=10 will move 20mm in sum)
+        """
+        request = {'command': 'jog'}
         if x is not None:
             request['x'] = x
         if y is not None:
             request['y'] = y
         if z is not None:
             request['z'] = z
-        r = self._post_request(self._url['printhead'], request)
-        return(r)
+        return_val = self._post_request(self._url['printhead'], request)
+        return return_val
 
     def extrude(self, amount=5):
-        """Extrudes a given length of filament on the currently
-        active extruder. Negative values are retractions.
-        May rise an exception, either HTTPException
-        or OctoprintException (for example when trying to extrude
-        when the printer is busy or not connected).
         """
-        request = {'command':'extrude','amount':amount}
-        r = self._post_request(self._url['tool'], request)
-        return(r)
+        Extrude <amount> mm of filament on the currently active extruder.
+        Use negative values to retract.
+        Defaults to 5mm extrusion.
+        """
+        request = {'command': 'extrude', 'amount': amount}
+        return_val = self._post_request(self._url['tool'], request)
+        return return_val
+
+    def select_tool(self, tool=0):
+        """
+        Selects the active extruder
+        :param tool: extruder number, starting with 0. Default=0
+        :return: Whatever comes back...
+        """
+        request = {'command': 'select', 'tool': 'tool{0}'.format(tool)}
+        return_val = self._post_request(self._url['tool'], request)
+        return return_val
 
     def set_tool_temp(self, temp=0, tool=0):
-        """Sets the temperature of the given tool.
-        Setting the temperature to 0 deactivates the heater.
-        May rise an exception, either HTTPException
-        or OctoprintException.
+        """
+        Set Tool <tool> to Temperature <temp>.
+        Defaults to tool 0 temperature 0 (off).
         """
         target_string = 'tool{0}'.format(tool)
-        request = {'command':'target','targets':{target_string:temp}}
-        r = self._post_request(self._url['tool'], request)
-        return(r)
+        request = {'command': 'target', 'targets': {target_string: temp}}
+        return_val = self._post_request(self._url['tool'], request)
+        return return_val
+
+    def _get_temperatures(self, url, target_string):
+        param = {'history': 'false', 'limit': 2}
+        return_val = self._get_request(url, param)
+        if target_string in return_val:
+            return return_val[target_string]
+        else:
+            return None
 
     def get_tool_temp(self, tool=0):
-        """Gets the current temperature reading of the given tool.
-        May rise either HTTPException or
-        OctoprintException
+        """
+        Get the current temperature for tool <tool>.
+        Returns a dictionary with the current and target temperature
+        and the temperature offset.
         """
         target_string = 'tool{0}'.format(tool)
-        param = {'history':'false', 'limit':2}
-        r = self._get_request(self._url['tool'], param)
-        if target_string in r['temps']:
-            return(r['temps'][target_string])
-        else:
-            return(None)
-        
-    def set_bed_temp(self, temp=0):
-        """Sets the heated bed temperature. Setting the temperature
-        to 0 disables the bed heater.
-        May rise either HTTPException or OctoprintException.
-        """
-        request = {'command':'target','target':temp}
-        r = self._post_request(self._url['bed'], request)
-        return(r)
+        return_val = self._get_temperatures(self._url['tool'], target_string)
+        return return_val
 
+    def set_bed_temp(self, temp=0):
+        """
+        Set the bed to <temp> degrees celsius.
+        Defaults to 0 (bed off).
+        """
+        request = {'command': 'target', 'target': temp}
+        return_val = self._post_request(self._url['bed'], request)
+        return return_val
+
+    def get_bed_temp(self):
+        """
+        Get the current bed temperature.
+        Returns a dictionary with the current and target temperature
+        and the temperature offset.
+        """
+        target_string = 'bed'
+        return_val = self._get_temperatures(self._url['bed'], target_string)
+        return return_val
+
+    def get_job_info(self):
+        """
+        Get information about the current job.
+        Returns a dictionary with the job info.
+        Refer to the Octoprint doc for version 1.2.6
+        """
+        return_val = self._get_request(self._url['job'], None)
+        return return_val
+
+    def job_start(self):
+        """
+        Start the currently loaded job.
+        """
+        request = {'command': "start"}
+        return_val = self._post_request(self._url['job'], request)
+        return return_val
+
+    def job_restart(self):
+        """
+        Restart the currently running job.
+        """
+        request = {'command': 'restart'}
+        return_val = self._post_request(self._url['job'], request)
+        return return_val
+
+    def job_pause(self):
+        """
+        Pause the currently printing job.
+        """
+        request = {'command': 'pause'}
+        return_val = self._post_request(self._url['job'], request)
+        return return_val
+
+    def job_cancel(self):
+        """
+        Cancel the currently running job.
+        """
+        request = {'command': 'cancel'}
+        return_val = self._post_request(self._url['job'], request)
+        return return_val
+
+    def get_connection_status(self):
+        """
+        Gets the current connection information
+        :return:
+        """
+        return_val = self._get_request(self._url['connection'])
+        return return_val
+
+    def connect(self, port=None, baudrate=None, profile=None, save=None, autoconnect=None):
+        """
+        Connects to a printer
+        :param port: Port to connect to
+        :param baudrate:
+        :param profile:
+        :param save:
+        :param autoconnect:
+        :return:
+        """
+        request = {'command': 'connect'}
+        if port:
+            request['port'] = str(port)
+        if baudrate:
+            request['baudrate'] = str(baudrate)
+        if profile:
+            request['printerProfile'] = str(profile)
+        if save:
+            request['save'] = True
+        if autoconnect:
+            request['autoconnect'] = True
+        return_val = self._post_request(self._url['connection'], request)
+        return return_val
+
+    def disconnect(self):
+        """
+        Disconnect from printer
+        :return:
+        """
+        request = {'command': 'disconnect'}
+        return_val = self._post_request(self._url['connection'], request)
+        return return_val
+
+    def get_files(self):
+        """
+        Get the information of all files on the system
+        :return: file information dictionary
+        """
+        return_val = self._get_request(self._url['files'])
+        return return_val
 
 
 if __name__ == '__main__':
@@ -244,7 +362,7 @@ if __name__ == '__main__':
 
     config = xml.etree.ElementTree.parse('octoprint_api.xml')
     item = config.find('octoprint')
-    op = api(base_url=item.attrib['url'], api_key=item.attrib['apikey'], debug=True)
+    op = Api(base_url=item.attrib['url'], api_key=item.attrib['apikey'], debug=True)
     print('API key: {0}'.format(op.apikey))
     apikey = op.apikey
     op.apikey = 'Romanes eunt domus'
@@ -256,7 +374,7 @@ if __name__ == '__main__':
     print('Retrieving version')
     r = op.get_version()
     print(r)
-    print('Retrieveing connection')
+    print('Retrieving connection')
     r = op.get_connection()
     print(r)
     print('Homing axis')
@@ -268,17 +386,18 @@ if __name__ == '__main__':
     print('Reading tool status')
     r = op.get_status()
     print(r)
-    # print('Set bed temperature')
-    # r = op.set_bed_temp(temp=60)
-    # print(r)
+    print('Set bed temperature')
+    r = op.set_bed_temp(temp=60)
+    print(r)
     print('Get Tool 0 temp')
     r = op.get_tool_temp(tool=0)
     print(r)
-    # print('Waiting one minute for temperatures to change, please wait')
-    # time.sleep(60)
-    # r = op.get_status()
-    # print(r)
+    print('Waiting 30s for temperatures to change, please wait')
+    time.sleep(30)
+    r = op.get_status()
+    print(r)
     op.set_bed_temp(temp=0)
     op.set_tool_temp(temp=0)
     r = op.get_status()
+    print('Final state message:')
     print(r)

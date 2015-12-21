@@ -1,7 +1,7 @@
 # OctoprintPythonAPI
 Python API for the OctoPrint 3d printer server
 
-This Python progam provides an object for controlling a 3D printer using OctoPrint as print server. Note: Work in progress, not all API functions are implemeted yet (e.g. job and file control are still missing, but will be added soon).
+This Python progam provides an object for controlling a 3D printer using OctoPrint as print server. Note: Work in progress, not all API functions are implemeted yet (e.g. job control is still missing and file control is just able to read the directory, but more will be added soon).
 
 Usage: Put the octoprint_python_api.py in your search path, import it in your program and instantiate the object 'api'. It's member functions let you control your printer.
 
