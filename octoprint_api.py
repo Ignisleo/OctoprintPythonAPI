@@ -137,6 +137,9 @@ class Api(object):
         Returns a dictionary:
         {<json_decoded_data>}
         Otherwise raises an exception
+        :param history:
+        :param limit:
+        :return:
         """
         if history:
             hist_str = 'true'
@@ -150,6 +153,7 @@ class Api(object):
         """
         Get version information of the OctoPrint server
         Otherwise raises an exception
+        :return:
         """
         return_val = self._get_request(self._url['version'], None)
         return return_val
@@ -159,6 +163,7 @@ class Api(object):
         Get connection information between OctoPrint server
         and printer.
         Otherwise raises an exception.
+        :return:
         """
         return_val = self._get_request(self._url['connection'], None)
         return return_val
@@ -167,6 +172,10 @@ class Api(object):
         """
         Home the printhead in the given axis.
         Any value different than 'None' will home the respective axis.
+        :param x:
+        :param y:
+        :param z:
+        :return:
         """
         home_set = []
         if x:
@@ -185,6 +194,10 @@ class Api(object):
         Any value other than 'None' will move in the respective axis,
         all values are incremental.
         (e.g. x=10 followed by x=10 will move 20mm in sum)
+        :param x:
+        :param y:
+        :param z:
+        :return:
         """
         request = {'command': 'jog'}
         if x is not None:
@@ -201,6 +214,8 @@ class Api(object):
         Extrude <amount> mm of filament on the currently active extruder.
         Use negative values to retract.
         Defaults to 5mm extrusion.
+        :param amount:
+        :return:
         """
         request = {'command': 'extrude', 'amount': amount}
         return_val = self._post_request(self._url['tool'], request)
@@ -220,6 +235,9 @@ class Api(object):
         """
         Set Tool <tool> to Temperature <temp>.
         Defaults to tool 0 temperature 0 (off).
+        :param temp:
+        :param tool:
+        :return:
         """
         target_string = 'tool{0}'.format(tool)
         request = {'command': 'target', 'targets': {target_string: temp}}
@@ -239,6 +257,8 @@ class Api(object):
         Get the current temperature for tool <tool>.
         Returns a dictionary with the current and target temperature
         and the temperature offset.
+        :param tool:
+        :return:
         """
         target_string = 'tool{0}'.format(tool)
         return_val = self._get_temperatures(self._url['tool'], target_string)
@@ -248,6 +268,8 @@ class Api(object):
         """
         Set the bed to <temp> degrees celsius.
         Defaults to 0 (bed off).
+        :param temp:
+        :return:
         """
         request = {'command': 'target', 'target': temp}
         return_val = self._post_request(self._url['bed'], request)
@@ -258,6 +280,7 @@ class Api(object):
         Get the current bed temperature.
         Returns a dictionary with the current and target temperature
         and the temperature offset.
+        :return:
         """
         target_string = 'bed'
         return_val = self._get_temperatures(self._url['bed'], target_string)
@@ -268,6 +291,7 @@ class Api(object):
         Get information about the current job.
         Returns a dictionary with the job info.
         Refer to the Octoprint doc for version 1.2.6
+        :return:
         """
         return_val = self._get_request(self._url['job'], None)
         return return_val
@@ -275,6 +299,7 @@ class Api(object):
     def job_start(self):
         """
         Start the currently loaded job.
+        :return:
         """
         request = {'command': "start"}
         return_val = self._post_request(self._url['job'], request)
@@ -283,6 +308,7 @@ class Api(object):
     def job_restart(self):
         """
         Restart the currently running job.
+        :return:
         """
         request = {'command': 'restart'}
         return_val = self._post_request(self._url['job'], request)
@@ -291,6 +317,7 @@ class Api(object):
     def job_pause(self):
         """
         Pause the currently printing job.
+        :return:
         """
         request = {'command': 'pause'}
         return_val = self._post_request(self._url['job'], request)
@@ -345,14 +372,53 @@ class Api(object):
         return_val = self._post_request(self._url['connection'], request)
         return return_val
 
-    def get_files(self):
+    def get_files(self, location=None):
         """
         Get the information of all files on the system
+        :param location: Location to list. 'local', 'sdcard' or None for all
         :return: file information dictionary
         """
-        return_val = self._get_request(self._url['files'])
+        if location in ['local', 'sdcard']:
+            url = '{0}/{1}'.format(self._url['files'], location)
+        else:
+            url = self._url['files']
+        return_val = self._get_request(url)
         return return_val
 
+    def select_file(self, name=None, location='local', start_print=False):
+        """
+        Selects a file for printing, either from local Octoprint file system or
+        from SD card.
+        :param name: File name
+        :param location: Either 'locaL' or 'sdcard', default: 'local'
+        :param start_print: Immediately start print, default: False
+        :return:
+        """
+        request = {'command': 'select', 'print': start_print}
+        request_url = '{0}/{1}/{2}'.format(self._url['files'], location, name)
+        return_val = self._post_request(request_url, request)
+        return return_val
+
+    def job(self, command=None):
+        """
+        Control a job.
+        Start starts to print the currently active file,
+        restart restarts the print from the beginning,
+        pause pauses or unpauses a job,
+        cancel stops the currently active print job.
+
+        An error is raised if there is:
+        no file selected when starting,
+        no job printing or paused when pausing,
+        no current job paused when restarting,
+        no print job running or paused when cancelling
+        :param command: string, either start, restart, pause or cancel
+        :return:
+        """
+        if command.lower() in ['start', 'cancel', 'restart', 'pause']:
+            request = {'command': command.lower()}
+            return_val = self._post_request(self._url['job'], request)
+            return return_val
 
 if __name__ == '__main__':
     # for parsing the config file in self-test
