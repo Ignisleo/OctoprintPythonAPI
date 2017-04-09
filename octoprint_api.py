@@ -34,6 +34,11 @@ class PrinterBusyException(OctoprintException):
     pass
 
 
+class NotConnectedException(OctoprintException):
+    """Raise when printer is not connected to server.
+    """
+    pass
+
 class FileException(OctoprintException):
     """Raise when something goes wrong when handling files.
     """

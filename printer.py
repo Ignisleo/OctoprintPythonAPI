@@ -61,6 +61,11 @@ def jog_func(arguments):
     printer.jog(arguments.x, arguments.y, arguments.z)
 
 
+def extrude_func(arguments):
+    printer = init_printer(arguments)
+    printer.extrude(arguments.amount)
+
+    
 def tool_func(arguments):
     printer = init_printer(arguments)
     printer.set_tool_temp(arguments.temperature, arguments.number)
@@ -173,6 +178,7 @@ def parser_func():
                                            help='Extrude from currently active extruder')
     extrude_parser.add_argument('amount', type=int, default=5,
                                 help='Extrude length, negative values to retract (defaults to 5mm)')
+    extrude_parser.set_defaults(func=extrude_func)
 
     connection_parser = subcommand.add_parser('connection',
                                               help='Connection handling')
